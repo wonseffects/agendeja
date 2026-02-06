@@ -42,7 +42,6 @@ export async function buscarAgendamentosPendentes() {
       WHERE 
         a.status = 'agendado'
         AND a.data_horario > NOW()
-        AND a.data_horario <= DATE_ADD(NOW(), INTERVAL ? MINUTE)
         AND (wn.enviado IS NULL OR wn.enviado = 0)
       ORDER BY a.data_horario ASC
       LIMIT ?

@@ -1,0 +1,26 @@
+{
+  "name": "whatsapp-agendamentos-bot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp para envio de lembretes de agendamentos",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node src/teste.js",
+    "test-numero": "node src/testar-numero.js"
+  },
+  "keywords": ["whatsapp", "bot", "baileys", "agendamentos"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.8",
+    "mysql2": "^3.11.5",
+    "pino": "^9.5.0",
+    "qrcode-terminal": "^0.12.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

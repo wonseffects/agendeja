@@ -8,6 +8,19 @@ import {
 } from './database.js';
 import { delay } from './utils.js';
 
+import express from 'express'
+import path from 'path'
+
+
+const app = express()
+
+app.get('/qr', (req, res) => {
+  res.sendFile(path.resolve('./qr.png'))
+})
+
+const PORT = process.env.PORT || 3000
+app.listen(PORT)
+
 dotenv.config();
 
 class BotAgendamentos {

@@ -22,8 +22,6 @@ const pool = mysql.createPool({
  */
 export async function buscarAgendamentosPendentes() {
   try {
-    const antecedenciaMinutos = parseInt(process.env.LEMBRETE_ANTECEDENCIA_MINUTOS) || 1440;
-    
     const query = `
       SELECT 
         a.id,
@@ -48,7 +46,7 @@ export async function buscarAgendamentosPendentes() {
     `;
     
     const maxMensagens = parseInt(process.env.MAX_MENSAGENS_POR_CICLO) || 10;
-    const [rows] = await pool.execute(query, [antecedenciaMinutos, maxMensagens]);
+    const [rows] = await pool.execute(query, [maxMensagens]);
     
     return rows;
   } catch (error) {

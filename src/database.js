@@ -46,7 +46,7 @@ export async function buscarAgendamentosPendentes() {
     `;
     
     const maxMensagens = parseInt(process.env.MAX_MENSAGENS_POR_CICLO) || 10;
-    const [rows] = await pool.execute(query, [maxMensagens]);
+    const [rows] = await pool.execute(query, [maxMensagens]);  // ← SÓ maxMensagens aqui!
     
     return rows;
   } catch (error) {

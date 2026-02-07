@@ -16,6 +16,112 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 0
 });
 
+
+/**
+ * Busca agendamentos que precisam de lembrete de 1 hora
+ * @returns {Promise<Array>}
+ */
+export async function buscarAgendamentos1Hora() {
+  try {
+    const query = `
+      SELECT 
+        a.id,
+        a.id_empresa,
+        a.cliente_nome,
+        a.telefone,
+        a.data_horario,
+        s.nome_servico,
+        p.nome_profissional,
+        e.nome_empresa
+      FROM agendamentos a
+      INNER JOIN servicos s ON a.id_servico = s.id
+      INNER JOIN profissionais p ON a.id_profissional = p.id
+      INNER JOIN empresas e ON a.id_empresa = e.id
+      WHERE 
+        a.status = 'agendado'
+        AND a.msg_1h = 0
+        AND a.data_horario > NOW()
+        AND a.data_horario <= DATE_ADD(NOW(), INTERVAL 60 MINUTE)
+      ORDER BY a.data_horario ASC
+      LIMIT ?
+    `;
+    
+    const maxMensagens = parseInt(process.env.MAX_MENSAGENS_POR_CICLO) || 10;
+    const [rows] = await pool.execute(query, [maxMensagens]);
+    
+    return rows;
+  } catch (error) {
+    console.error('❌ Erro ao buscar agendamentos 1h:', error);
+    return [];
+  }
+}
+
+/**
+ * Busca agendamentos que precisam de lembrete de 30 minutos
+ * @returns {Promise<Array>}
+ */
+export async function buscarAgendamentos30Min() {
+  try {
+    const query = `
+      SELECT 
+        a.id,
+        a.id_empresa,
+        a.cliente_nome,
+        a.telefone,
+        a.data_horario,
+        s.nome_servico,
+        p.nome_profissional,
+        e.nome_empresa
+      FROM agendamentos a
+      INNER JOIN servicos s ON a.id_servico = s.id
+      INNER JOIN profissionais p ON a.id_profissional = p.id
+      INNER JOIN empresas e ON a.id_empresa = e.id
+      WHERE 
+        a.status = 'agendado'
+        AND a.msg_30min = 0
+        AND a.data_horario > NOW()
+        AND a.data_horario <= DATE_ADD(NOW(), INTERVAL 30 MINUTE)
+      ORDER BY a.data_horario ASC
+      LIMIT ?
+    `;
+    
+    const maxMensagens = parseInt(process.env.MAX_MENSAGENS_POR_CICLO) || 10;
+    const [rows] = await pool.execute(query, [maxMensagens]);
+    
+    return rows;
+  } catch (error) {
+    console.error('❌ Erro ao buscar agendamentos 30min:', error);
+    return [];
+  }
+}
+
+/**
+ * Marca mensagem de 1 hora como enviada
+ */
+export async function marcarMensagem1hEnviada(agendamentoId) {
+  try {
+    const query = `UPDATE agendamentos SET msg_1h = 1 WHERE id = ?`;
+    await pool.execute(query, [agendamentoId]);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao marcar msg_1h ${agendamentoId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Marca mensagem de 30 minutos como enviada
+ */
+export async function marcarMensagem30minEnviada(agendamentoId) {
+  try {
+    const query = `UPDATE agendamentos SET msg_30min = 1 WHERE id = ?`;
+    await pool.execute(query, [agendamentoId]);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erro ao marcar msg_30min ${agendamentoId}:`, error);
+    return false;
+  }
+}
 /**
  * Busca agendamentos que precisam de lembrete
  * @returns {Promise<Array>} Lista de agendamentos
@@ -36,17 +142,16 @@ export async function buscarAgendamentosPendentes() {
       INNER JOIN servicos s ON a.id_servico = s.id
       INNER JOIN profissionais p ON a.id_profissional = p.id
       INNER JOIN empresas e ON a.id_empresa = e.id
-      LEFT JOIN whatsapp_notificacoes wn ON a.id = wn.agendamento_id
       WHERE 
         a.status = 'agendado'
+        AND a.msg_confirmacao = 0
         AND a.data_horario > NOW()
-        AND (wn.enviado IS NULL OR wn.enviado = 0)
       ORDER BY a.data_horario ASC
       LIMIT ?
     `;
     
     const maxMensagens = parseInt(process.env.MAX_MENSAGENS_POR_CICLO) || 10;
-    const [rows] = await pool.execute(query, [maxMensagens]);  // ← SÓ maxMensagens aqui!
+    const [rows] = await pool.execute(query, [maxMensagens]);
     
     return rows;
   } catch (error) {
@@ -62,18 +167,11 @@ export async function buscarAgendamentosPendentes() {
  */
 export async function marcarNotificacaoEnviada(agendamentoId) {
   try {
-    const query = `
-      INSERT INTO whatsapp_notificacoes (agendamento_id, enviado, enviado_em)
-      VALUES (?, 1, NOW())
-      ON DUPLICATE KEY UPDATE 
-        enviado = 1,
-        enviado_em = NOW()
-    `;
-    
+    const query = `UPDATE agendamentos SET msg_confirmacao = 1 WHERE id = ?`;
     await pool.execute(query, [agendamentoId]);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao marcar notificação ${agendamentoId}:`, error);
+    console.error(`❌ Erro ao marcar confirmação ${agendamentoId}:`, error);
     return false;
   }
 }

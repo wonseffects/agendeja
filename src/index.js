@@ -3,7 +3,11 @@ import WhatsAppBot from './whatsapp.js';
 import {
   testarConexao,
   buscarAgendamentosPendentes,
+  buscarAgendamentos1Hora,
+  buscarAgendamentos30Min,
   marcarNotificacaoEnviada,
+  marcarMensagem1hEnviada,
+  marcarMensagem30minEnviada,
   registrarErroEnvio
 } from './database.js';
 import { delay } from './utils.js';
@@ -80,50 +84,76 @@ class BotAgendamentos {
   /**
    * Verifica agendamentos e envia lembretes
    */
-  async verificarEEnviarLembretes() {
+async verificarEEnviarLembretes() {
     console.log('\n╔═══════════════════════════════════════════════════╗');
     console.log('║  🔍 VERIFICANDO AGENDAMENTOS PENDENTES            ║');
     console.log('╚═══════════════════════════════════════════════════╝');
     console.log(`🕐 ${new Date().toLocaleString('pt-BR')}\n`);
 
-    // Verifica se o WhatsApp está conectado
     if (!this.bot.estaConectado()) {
       console.log('⚠️ WhatsApp não está conectado. Aguardando...');
       return;
     }
 
-    // Busca agendamentos pendentes
-    const agendamentos = await buscarAgendamentosPendentes();
-
-    if (agendamentos.length === 0) {
-      console.log('ℹ️ Nenhum agendamento pendente de lembrete no momento.');
-      return;
-    }
-
-    console.log(`📋 ${agendamentos.length} agendamento(s) encontrado(s)\n`);
-
-    // Processa os agendamentos
-    const resultado = await this.bot.processarAgendamentos(agendamentos);
-
-    console.log('\n╔═══════════════════════════════════════════════════╗');
-    console.log('║  📊 RESULTADO DO ENVIO                            ║');
-    console.log('╚═══════════════════════════════════════════════════╝');
-    console.log(`✅ Enviados: ${resultado.enviados}`);
-    console.log(`❌ Erros: ${resultado.erros}`);
-    console.log(`📊 Total: ${resultado.total}`);
-
-    // Marca notificações como enviadas
-    for (const agendamento of agendamentos) {
-      const index = agendamentos.indexOf(agendamento);
+    // 1. CONFIRMAÇÕES (assim que agendar)
+    const confirmacoes = await buscarAgendamentosPendentes();
+    
+    if (confirmacoes.length > 0) {
+      console.log(`\n📋 [CONFIRMAÇÃO] ${confirmacoes.length} agendamento(s) novo(s)`);
+      const resultado = await this.bot.processarAgendamentos(confirmacoes);
       
-      if (index < resultado.enviados) {
+      console.log('\n╔═══════════════════════════════════════════════════╗');
+      console.log('║  📊 RESULTADO - CONFIRMAÇÕES                      ║');
+      console.log('╚═══════════════════════════════════════════════════╝');
+      console.log(`✅ Enviados: ${resultado.enviados}`);
+      console.log(`❌ Erros: ${resultado.erros}`);
+
+      for (const agendamento of confirmacoes) {
         await marcarNotificacaoEnviada(agendamento.id);
-      } else {
-        await registrarErroEnvio(agendamento.id, 'Falha no envio');
       }
     }
 
-    console.log('\n✅ Processamento concluído!');
+    // 2. LEMBRETES DE 1 HORA
+    const lembretes1h = await buscarAgendamentos1Hora();
+    
+    if (lembretes1h.length > 0) {
+      console.log(`\n📋 [1 HORA] ${lembretes1h.length} lembrete(s) de 1 hora`);
+      const resultado = await this.bot.processarAgendamentos1Hora(lembretes1h);
+      
+      console.log('\n╔═══════════════════════════════════════════════════╗');
+      console.log('║  📊 RESULTADO - 1 HORA                            ║');
+      console.log('╚═══════════════════════════════════════════════════╝');
+      console.log(`✅ Enviados: ${resultado.enviados}`);
+      console.log(`❌ Erros: ${resultado.erros}`);
+
+      for (const agendamento of lembretes1h) {
+        await marcarMensagem1hEnviada(agendamento.id);
+      }
+    }
+
+    // 3. LEMBRETES DE 30 MINUTOS
+    const lembretes30min = await buscarAgendamentos30Min();
+    
+    if (lembretes30min.length > 0) {
+      console.log(`\n📋 [30 MIN] ${lembretes30min.length} lembrete(s) de 30 minutos`);
+      const resultado = await this.bot.processarAgendamentos30Min(lembretes30min);
+      
+      console.log('\n╔═══════════════════════════════════════════════════╗');
+      console.log('║  📊 RESULTADO - 30 MINUTOS                        ║');
+      console.log('╚═══════════════════════════════════════════════════╝');
+      console.log(`✅ Enviados: ${resultado.enviados}`);
+      console.log(`❌ Erros: ${resultado.erros}`);
+
+      for (const agendamento of lembretes30min) {
+        await marcarMensagem30minEnviada(agendamento.id);
+      }
+    }
+
+    if (confirmacoes.length === 0 && lembretes1h.length === 0 && lembretes30min.length === 0) {
+      console.log('ℹ️ Nenhum lembrete pendente no momento.');
+    } else {
+      console.log('\n✅ Todos os lembretes processados!');
+    }
   }
 
   /**

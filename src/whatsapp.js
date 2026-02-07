@@ -302,5 +302,53 @@ class WhatsAppBot {
     }
   }
 }
+/**
+   * Processa múltiplos agendamentos de 1 hora
+   */
+  async processarAgendamentos1Hora(agendamentos) {
+    const delayMs = parseInt(process.env.DELAY_ENTRE_MENSAGENS) || 5000;
+    let enviados = 0;
+    let erros = 0;
 
+    console.log(`\n📋 [1 HORA] Processando ${agendamentos.length} lembrete(s)...`);
+
+    for (const agendamento of agendamentos) {
+      const sucesso = await this.processarAgendamento1Hora(agendamento);
+      
+      if (sucesso) enviados++;
+      else erros++;
+
+      if (agendamentos.indexOf(agendamento) < agendamentos.length - 1) {
+        console.log(`⏳ Aguardando ${delayMs/1000}s...`);
+        await delay(delayMs);
+      }
+    }
+
+    return { enviados, erros, total: agendamentos.length };
+  }
+
+  /**
+   * Processa múltiplos agendamentos de 30 minutos
+   */
+  async processarAgendamentos30Min(agendamentos) {
+    const delayMs = parseInt(process.env.DELAY_ENTRE_MENSAGENS) || 5000;
+    let enviados = 0;
+    let erros = 0;
+
+    console.log(`\n📋 [30 MIN] Processando ${agendamentos.length} lembrete(s)...`);
+
+    for (const agendamento of agendamentos) {
+      const sucesso = await this.processarAgendamento30Min(agendamento);
+      
+      if (sucesso) enviados++;
+      else erros++;
+
+      if (agendamentos.indexOf(agendamento) < agendamentos.length - 1) {
+        console.log(`⏳ Aguardando ${delayMs/1000}s...`);
+        await delay(delayMs);
+      }
+    }
+
+    return { enviados, erros, total: agendamentos.length };
+  }
 export default WhatsAppBot;

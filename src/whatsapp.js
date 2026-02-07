@@ -9,7 +9,9 @@ import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 import { 
   formatarTelefoneWhatsApp, 
-  gerarMensagemLembrete, 
+  gerarMensagemLembrete,
+  gerarMensagem1Hora,
+  gerarMensagem30Min,
   delay,
   validarTelefone 
 } from './utils.js';

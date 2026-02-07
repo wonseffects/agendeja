@@ -166,6 +166,63 @@ class WhatsAppBot {
    * @param {object} agendamento 
    * @returns {Promise<boolean>}
    */
+  /**
+   * Processa agendamento de 1 hora
+   */
+  async processarAgendamento1Hora(agendamento) {
+    try {
+      if (!validarTelefone(agendamento.telefone)) {
+        console.log(`⚠️ Telefone inválido para ${agendamento.cliente_nome}: ${agendamento.telefone}`);
+        return false;
+      }
+
+      const numeroWhatsApp = formatarTelefoneWhatsApp(agendamento.telefone);
+      const mensagem = gerarMensagem1Hora(agendamento);
+      
+      console.log(`\n📤 [1 HORA] Enviando para ${agendamento.cliente_nome}...`);
+      console.log(`📞 Número: ${agendamento.telefone} → ${numeroWhatsApp}`);
+      
+      const enviado = await this.enviarMensagem(numeroWhatsApp, mensagem);
+      
+      if (enviado) {
+        console.log(`✅ Lembrete de 1 hora enviado!`);
+      }
+      
+      return enviado;
+    } catch (error) {
+      console.error(`❌ Erro ao processar lembrete 1h ${agendamento.id}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Processa agendamento de 30 minutos
+   */
+  async processarAgendamento30Min(agendamento) {
+    try {
+      if (!validarTelefone(agendamento.telefone)) {
+        console.log(`⚠️ Telefone inválido para ${agendamento.cliente_nome}: ${agendamento.telefone}`);
+        return false;
+      }
+
+      const numeroWhatsApp = formatarTelefoneWhatsApp(agendamento.telefone);
+      const mensagem = gerarMensagem30Min(agendamento);
+      
+      console.log(`\n📤 [30 MIN] Enviando para ${agendamento.cliente_nome}...`);
+      console.log(`📞 Número: ${agendamento.telefone} → ${numeroWhatsApp}`);
+      
+      const enviado = await this.enviarMensagem(numeroWhatsApp, mensagem);
+      
+      if (enviado) {
+        console.log(`✅ Lembrete de 30 minutos enviado!`);
+      }
+      
+      return enviado;
+    } catch (error) {
+      console.error(`❌ Erro ao processar lembrete 30min ${agendamento.id}:`, error);
+      return false;
+    }
+  }
   async processarAgendamento(agendamento) {
     try {
       // Valida telefone

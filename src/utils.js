@@ -35,26 +35,76 @@ export function formatarDataHora(dataHorario) {
 }
 
 /**
- * Gera mensagem de lembrete personalizada
+ * Gera mensagem de confirmação (mensagem inicial)
  * @param {object} agendamento 
  * @returns {string}
  */
 export function gerarMensagemLembrete(agendamento) {
   const dataFormatada = formatarDataHora(agendamento.data_horario);
   
-  const mensagem = `🔔 *Lembrete de Agendamento* 🔔
+  const mensagem = `✅ *Agendamento Confirmado!* ✅
 
 Olá, *${agendamento.cliente_nome}*! 
 
-Este é um lembrete do seu agendamento na *${agendamento.nome_empresa}*:
+Seu agendamento na *${agendamento.nome_empresa}* foi confirmado:
 
 📅 *Data/Hora:* ${dataFormatada}
 ✂️ *Serviço:* ${agendamento.nome_servico}
 👤 *Profissional:* ${agendamento.nome_profissional}
 
-Nos vemos em breve! 😊
+Você receberá lembretes próximo ao horário! 😊
 
 _Caso precise cancelar ou reagendar, entre em contato conosco._`;
+
+  return mensagem;
+}
+
+/**
+ * Gera mensagem de lembrete de 1 hora
+ * @param {object} agendamento 
+ * @returns {string}
+ */
+export function gerarMensagem1Hora(agendamento) {
+  const dataFormatada = formatarDataHora(agendamento.data_horario);
+  
+  const mensagem = `⏰ *Lembrete - Falta 1 hora!* ⏰
+
+Olá, *${agendamento.cliente_nome}*! 
+
+Seu agendamento na *${agendamento.nome_empresa}* está próximo:
+
+📅 *Data/Hora:* ${dataFormatada}
+✂️ *Serviço:* ${agendamento.nome_servico}
+👤 *Profissional:* ${agendamento.nome_profissional}
+
+⏱️ *Falta apenas 1 hora!*
+
+Já estamos te esperando! 😊`;
+
+  return mensagem;
+}
+
+/**
+ * Gera mensagem de lembrete de 30 minutos
+ * @param {object} agendamento 
+ * @returns {string}
+ */
+export function gerarMensagem30Min(agendamento) {
+  const dataFormatada = formatarDataHora(agendamento.data_horario);
+  
+  const mensagem = `🔔 *ATENÇÃO - Faltam 30 minutos!* 🔔
+
+Olá, *${agendamento.cliente_nome}*! 
+
+Seu horário está chegando:
+
+📅 *Data/Hora:* ${dataFormatada}
+✂️ *Serviço:* ${agendamento.nome_servico}
+👤 *Profissional:* ${agendamento.nome_profissional}
+
+⚡ *Faltam apenas 30 minutos!*
+
+Estamos te aguardando! 🏃‍♂️💨`;
 
   return mensagem;
 }
@@ -82,49 +132,4 @@ export function validarTelefone(telefone) {
   }
   
   return true;
-}
-/**
- * Gera mensagem de lembrete de 1 hora
- */
-export function gerarMensagem1Hora(agendamento) {
-  const dataFormatada = formatarDataHora(agendamento.data_horario);
-  
-  const mensagem = `⏰ *Lembrete - Falta 1 hora!* ⏰
-
-Olá, *${agendamento.cliente_nome}*! 
-
-Seu agendamento na *${agendamento.nome_empresa}* está próximo:
-
-📅 *Data/Hora:* ${dataFormatada}
-✂️ *Serviço:* ${agendamento.nome_servico}
-👤 *Profissional:* ${agendamento.nome_profissional}
-
-⏱️ *Falta apenas 1 hora!*
-
-Já estamos te esperando! 😊`;
-
-  return mensagem;
-}
-
-/**
- * Gera mensagem de lembrete de 30 minutos
- */
-export function gerarMensagem30Min(agendamento) {
-  const dataFormatada = formatarDataHora(agendamento.data_horario);
-  
-  const mensagem = `🔔 *ATENÇÃO - Falta 30 minutos!* 🔔
-
-Olá, *${agendamento.cliente_nome}*! 
-
-Seu horário está chegando:
-
-📅 *Data/Hora:* ${dataFormatada}
-✂️ *Serviço:* ${agendamento.nome_servico}
-👤 *Profissional:* ${agendamento.nome_profissional}
-
-⚡ *Faltam apenas 30 minutos!*
-
-Estamos te aguardando! 🏃‍♂️💨`;
-
-  return mensagem;
 }

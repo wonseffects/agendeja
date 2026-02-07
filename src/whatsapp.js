@@ -39,7 +39,7 @@ class WhatsAppBot {
       this.sock = makeWASocket({
         version,
         logger,
-        printQRInTerminal: false, // Vamos usar qrcode-terminal
+        printQRInTerminal: false,
         auth: {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, logger),
@@ -52,18 +52,14 @@ class WhatsAppBot {
         }
       });
 
-      // Evento: Atualização de credenciais
       this.sock.ev.on('creds.update', saveCreds);
 
-      // Evento: Mudança de conexão
       this.sock.ev.on('connection.update', async (update) => {
         await this.handleConnectionUpdate(update);
       });
 
-      // Evento: Mensagens recebidas (opcional - para futuras funcionalidades)
       this.sock.ev.on('messages.upsert', async (m) => {
         // Aqui você pode implementar respostas automáticas se quiser
-        // console.log('Mensagem recebida:', m);
       });
 
     } catch (error) {
@@ -78,21 +74,18 @@ class WhatsAppBot {
   async handleConnectionUpdate(update) {
     const { connection, lastDisconnect, qr } = update;
 
-    // Mostra QR Code
     if (qr) {
       console.log('\n📱 Escaneie o QR Code abaixo com seu WhatsApp:\n');
       qrcode.generate(qr, { small: true });
       console.log('\n');
     }
 
-    // Conexão estabelecida
     if (connection === 'open') {
       console.log('✅ WhatsApp conectado com sucesso!');
       this.isConnected = true;
       this.reconnectAttempts = 0;
     }
 
-    // Desconectado
     if (connection === 'close') {
       this.isConnected = false;
       const shouldReconnect = (lastDisconnect?.error instanceof Boom) &&
@@ -129,7 +122,6 @@ class WhatsAppBot {
 
       console.log(`🔍 Verificando se ${numero} existe no WhatsApp...`);
 
-      // Verifica se o número existe no WhatsApp
       const checkResult = await this.sock.onWhatsApp(numero);
       
       console.log(`📋 Resultado da verificação:`, checkResult);
@@ -151,7 +143,6 @@ class WhatsAppBot {
       console.log(`✅ Número verificado! Está no WhatsApp como: ${result.jid}`);
       console.log(`📤 Enviando mensagem...`);
 
-      // Envia a mensagem usando o JID verificado
       await this.sock.sendMessage(result.jid, { text: mensagem });
       console.log(`✅ Mensagem REALMENTE enviada para ${result.jid}`);
       
@@ -164,12 +155,40 @@ class WhatsAppBot {
   }
 
   /**
-   * Processa um agendamento e envia lembrete
+   * Processa um agendamento e envia confirmação
    * @param {object} agendamento 
    * @returns {Promise<boolean>}
    */
+  async processarAgendamento(agendamento) {
+    try {
+      if (!validarTelefone(agendamento.telefone)) {
+        console.log(`⚠️ Telefone inválido para ${agendamento.cliente_nome}: ${agendamento.telefone}`);
+        return false;
+      }
+
+      const numeroWhatsApp = formatarTelefoneWhatsApp(agendamento.telefone);
+      const mensagem = gerarMensagemLembrete(agendamento);
+      
+      console.log(`\n📤 [CONFIRMAÇÃO] Enviando para ${agendamento.cliente_nome}...`);
+      console.log(`📞 Número: ${agendamento.telefone} → ${numeroWhatsApp}`);
+      
+      const enviado = await this.enviarMensagem(numeroWhatsApp, mensagem);
+      
+      if (enviado) {
+        console.log(`✅ Confirmação enviada com sucesso!`);
+      }
+      
+      return enviado;
+    } catch (error) {
+      console.error(`❌ Erro ao processar agendamento ${agendamento.id}:`, error);
+      return false;
+    }
+  }
+
   /**
    * Processa agendamento de 1 hora
+   * @param {object} agendamento 
+   * @returns {Promise<boolean>}
    */
   async processarAgendamento1Hora(agendamento) {
     try {
@@ -199,6 +218,8 @@ class WhatsAppBot {
 
   /**
    * Processa agendamento de 30 minutos
+   * @param {object} agendamento 
+   * @returns {Promise<boolean>}
    */
   async processarAgendamento30Min(agendamento) {
     try {
@@ -225,39 +246,9 @@ class WhatsAppBot {
       return false;
     }
   }
-  async processarAgendamento(agendamento) {
-    try {
-      // Valida telefone
-      if (!validarTelefone(agendamento.telefone)) {
-        console.log(`⚠️ Telefone inválido para ${agendamento.cliente_nome}: ${agendamento.telefone}`);
-        return false;
-      }
-
-      // Formata número
-      const numeroWhatsApp = formatarTelefoneWhatsApp(agendamento.telefone);
-      
-      // Gera mensagem
-      const mensagem = gerarMensagemLembrete(agendamento);
-      
-      console.log(`\n📤 Enviando lembrete para ${agendamento.cliente_nome}...`);
-      console.log(`📞 Número: ${agendamento.telefone} → ${numeroWhatsApp}`);
-      
-      // Envia mensagem
-      const enviado = await this.enviarMensagem(numeroWhatsApp, mensagem);
-      
-      if (enviado) {
-        console.log(`✅ Lembrete enviado com sucesso!`);
-      }
-      
-      return enviado;
-    } catch (error) {
-      console.error(`❌ Erro ao processar agendamento ${agendamento.id}:`, error);
-      return false;
-    }
-  }
 
   /**
-   * Processa múltiplos agendamentos com delay
+   * Processa múltiplos agendamentos (confirmações)
    * @param {Array} agendamentos 
    * @returns {Promise<object>}
    */
@@ -266,7 +257,7 @@ class WhatsAppBot {
     let enviados = 0;
     let erros = 0;
 
-    console.log(`\n📋 Processando ${agendamentos.length} agendamento(s)...`);
+    console.log(`\n📋 [CONFIRMAÇÃO] Processando ${agendamentos.length} agendamento(s)...`);
 
     for (const agendamento of agendamentos) {
       const sucesso = await this.processarAgendamento(agendamento);
@@ -277,7 +268,6 @@ class WhatsAppBot {
         erros++;
       }
 
-      // Aguarda antes da próxima mensagem (anti-ban)
       if (agendamentos.indexOf(agendamento) < agendamentos.length - 1) {
         console.log(`⏳ Aguardando ${delayMs/1000}s antes da próxima mensagem...`);
         await delay(delayMs);
@@ -288,24 +278,9 @@ class WhatsAppBot {
   }
 
   /**
-   * Verifica se o bot está conectado
-   */
-  estaConectado() {
-    return this.isConnected;
-  }
-
-  /**
-   * Desconecta o bot
-   */
-  async desconectar() {
-    if (this.sock) {
-      await this.sock.logout();
-      console.log('👋 WhatsApp desconectado');
-    }
-  }
-}
-/**
    * Processa múltiplos agendamentos de 1 hora
+   * @param {Array} agendamentos 
+   * @returns {Promise<object>}
    */
   async processarAgendamentos1Hora(agendamentos) {
     const delayMs = parseInt(process.env.DELAY_ENTRE_MENSAGENS) || 5000;
@@ -331,6 +306,8 @@ class WhatsAppBot {
 
   /**
    * Processa múltiplos agendamentos de 30 minutos
+   * @param {Array} agendamentos 
+   * @returns {Promise<object>}
    */
   async processarAgendamentos30Min(agendamentos) {
     const delayMs = parseInt(process.env.DELAY_ENTRE_MENSAGENS) || 5000;
@@ -353,4 +330,23 @@ class WhatsAppBot {
 
     return { enviados, erros, total: agendamentos.length };
   }
+
+  /**
+   * Verifica se o bot está conectado
+   */
+  estaConectado() {
+    return this.isConnected;
+  }
+
+  /**
+   * Desconecta o bot
+   */
+  async desconectar() {
+    if (this.sock) {
+      await this.sock.logout();
+      console.log('👋 WhatsApp desconectado');
+    }
+  }
+}
+
 export default WhatsAppBot;

@@ -12,7 +12,6 @@ import {
 } from './database.js';
 import { delay } from './utils.js';
 
-
 dotenv.config();
 
 class BotAgendamentos {
@@ -84,16 +83,19 @@ class BotAgendamentos {
   /**
    * Verifica agendamentos e envia lembretes
    */
-async verificarEEnviarLembretes() {
+  async verificarEEnviarLembretes() {
     console.log('\n╔═══════════════════════════════════════════════════╗');
     console.log('║  🔍 VERIFICANDO AGENDAMENTOS PENDENTES            ║');
     console.log('╚═══════════════════════════════════════════════════╝');
     console.log(`🕐 ${new Date().toLocaleString('pt-BR')}\n`);
 
+    // Verifica se o WhatsApp está conectado
     if (!this.bot.estaConectado()) {
       console.log('⚠️ WhatsApp não está conectado. Aguardando...');
       return;
     }
+
+    let totalEnviados = 0;
 
     // 1. CONFIRMAÇÕES (assim que agendar)
     const confirmacoes = await buscarAgendamentosPendentes();
@@ -111,6 +113,8 @@ async verificarEEnviarLembretes() {
       for (const agendamento of confirmacoes) {
         await marcarNotificacaoEnviada(agendamento.id);
       }
+
+      totalEnviados += resultado.enviados;
     }
 
     // 2. LEMBRETES DE 1 HORA
@@ -129,6 +133,8 @@ async verificarEEnviarLembretes() {
       for (const agendamento of lembretes1h) {
         await marcarMensagem1hEnviada(agendamento.id);
       }
+
+      totalEnviados += resultado.enviados;
     }
 
     // 3. LEMBRETES DE 30 MINUTOS
@@ -147,9 +153,11 @@ async verificarEEnviarLembretes() {
       for (const agendamento of lembretes30min) {
         await marcarMensagem30minEnviada(agendamento.id);
       }
+
+      totalEnviados += resultado.enviados;
     }
 
-    if (confirmacoes.length === 0 && lembretes1h.length === 0 && lembretes30min.length === 0) {
+    if (totalEnviados === 0) {
       console.log('ℹ️ Nenhum lembrete pendente no momento.');
     } else {
       console.log('\n✅ Todos os lembretes processados!');
